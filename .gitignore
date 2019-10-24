@@ -139,3 +139,9 @@ gradle-app.setting
 **/build/
 
 # End of https://www.gitignore.io/api/node,java,gradle
+java/kafka-java-console-sample/docs/CF_Classic_Plan.md
+java/kafka-java-console-sample/docs/CF_Standard_Enterprise_Plan.md
+java/kafka-java-console-sample/docs/Cloud_Foundry.md
+java/kafka-java-console-sample/docs/Docker_Local.md
+java/kafka-java-console-sample/docs/Kubernetes_Service.md
+java/kafka-java-console-sample/docs/Local.md
