@@ -53,14 +53,12 @@ public class EventStreamsConsoleSample {
     private static final String APP_NAME = "kafka-java-console-sample-2.0";
     private static final String DEFAULT_TOPIC_NAME = "historicoclientes";
     private static final String ARG_CONSUMER = "-consumer";
-    private static final String ARG_PRODUCER_ = "-producer";
     private static final String ARG_TOPIC = "-topic";
     private static final Logger logger = Logger.getLogger(EventStreamsConsoleSample.class);
 
     private static Thread consumerThread = null;
     private static ConsumerRunnable consumerRunnable = null;
-    private static Thread producerThread = null;
-    private static ProducerRunnable producerRunnable = null;
+
 
     //add shutdown hooks (intercept CTRL-C etc.)
     static {
@@ -81,27 +79,7 @@ public class EventStreamsConsoleSample {
     }
 
     private static void printUsage() {
-        System.out.println("\n"
-                + "Usage:\n"
-                + "    java -jar build/libs/" + APP_NAME + ".jar \\\n"
-                + "              <kafka_brokers_sasl> { <api_key> | <user = token>:<password> } [" + ARG_CONSUMER + "] \\\n"
-                + "              [" + ARG_PRODUCER_ + "] [" + ARG_TOPIC + "]\n"
-                + "Where:\n"
-                + "    kafka_broker_sasl\n"
-                + "        Required. Comma separated list of broker endpoints to connect to, for\n"
-                + "        example \"host1:port1,host2:port2\".\n"
-                + "    api_key or user/password\n"
-                + "        Required. An Event Streams API key or user/password used to authenticate access to Kafka.\n"
-                + "        Use user/password if the user is defined as \"token\"\n"
-                + "    " + ARG_CONSUMER + "\n"
-                + "        Optional. Only consume message (do not produce messages to the topic).\n"
-                + "        If omitted this sample will both produce and consume messages.\n"
-                + "    " + ARG_PRODUCER_ + "\n"
-                + "        Optional. Only produce messages (do not consume messages from the\n"
-                + "        topic). If omitted this sample will both produce and consume messages.\n"
-                + "    " + ARG_TOPIC + "\n"
-                + "        Optional. Specifies the Kafka topic name to use. If omitted the\n"
-                + "        default used is '" + DEFAULT_TOPIC_NAME + "'\n");
+
     }
 
     public static void main(String args[])  {
@@ -109,7 +87,6 @@ public class EventStreamsConsoleSample {
             String bootstrapServers = null;
             String apiKey = null;
             boolean runConsumer = true;
-            boolean runProducer = true;
             String topicName = DEFAULT_TOPIC_NAME;
             if (args.length == 0 && System.getenv("VCAP_SERVICES") == null) {
                 printUsage();
@@ -147,17 +124,11 @@ public class EventStreamsConsoleSample {
                     try {
                         final ArgumentParser argParser = ArgumentParser.builder()
                                 .flag(ARG_CONSUMER)
-                                .flag(ARG_PRODUCER_)
                                 .option(ARG_TOPIC)
                                 .build();
                         final Map<String, String> parsedArgs =
                                 argParser.parseArguments(Arrays.copyOfRange(args, 2, args.length));
-                        if (parsedArgs.containsKey(ARG_CONSUMER) && !parsedArgs.containsKey(ARG_PRODUCER_)) {
-                            runProducer = false;
-                        }
-                        if (parsedArgs.containsKey(ARG_PRODUCER_) && !parsedArgs.containsKey(ARG_CONSUMER)) {
-                            runConsumer = false;
-                        }
+                     
                         if (parsedArgs.containsKey(ARG_TOPIC)) {
                             topicName = parsedArgs.get(ARG_TOPIC);
                         }
@@ -196,13 +167,6 @@ public class EventStreamsConsoleSample {
                 consumerThread.start();
             }
 
-            if (runProducer) {
-                Properties producerProperties = getProducerConfigs(bootstrapServers, apiKey);
-                producerRunnable = new ProducerRunnable(producerProperties, topicName);
-                producerThread = new Thread(producerRunnable, "Producer Thread");
-                producerThread.start();
-            }
-
             logger.log(Level.INFO, "EventStreamsConsoleSample will run until interrupted.");
         } catch (Exception e) {
             logger.log(Level.ERROR, "Exception occurred, application will terminate", e);
@@ -214,12 +178,9 @@ public class EventStreamsConsoleSample {
      * convenience method for cleanup on shutdown
      */
     private static void shutdown() {
-        if (producerRunnable != null)
-            producerRunnable.shutdown();
+     
         if (consumerRunnable != null)
             consumerRunnable.shutdown();
-        if (producerThread != null)
-            producerThread.interrupt();
         if (consumerThread != null)
             consumerThread.interrupt();
     }
@@ -236,16 +197,6 @@ public class EventStreamsConsoleSample {
         return sb.toString();
     }
 
-    static final Properties getProducerConfigs(String bootstrapServers, String apikey) {
-        Properties configs = new Properties();
-        configs.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
-        configs.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
-        configs.put(ProducerConfig.CLIENT_ID_CONFIG, "kafka-java-console-sample-producer");
-        configs.put(ProducerConfig.ACKS_CONFIG, "-1");
-        configs.put(ProducerConfig.CLIENT_DNS_LOOKUP_CONFIG,"use_all_dns_ips");
-        configs.putAll(getCommonConfigs(bootstrapServers, apikey));
-        return configs;
-    }
 
     static final Properties getConsumerConfigs(String bootstrapServers, String apikey) {
         Properties configs = new Properties();
